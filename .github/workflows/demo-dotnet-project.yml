@@ -1,0 +1,80 @@
+name: esonparedes/demo-dotnet-project
+on:
+  push:
+  workflow_dispatch:
+concurrency:
+  group: "${{ github.ref }}"
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/dotnet/sdk:7.0
+    timeout-minutes: 60
+    env:
+      OBJECTS_DIRECTORY: obj
+      NUGET_PACKAGES_DIRECTORY: ".nuget"
+      SOURCE_CODE_PATH: "*/*/"
+    steps:
+    - uses: actions/checkout@v4.1.0
+      with:
+        fetch-depth: 20
+        lfs: true
+    - uses: actions/cache@v3.3.2
+      with:
+        path: |-
+          $SOURCE_CODE_PATH$OBJECTS_DIRECTORY/project.assets.json
+          $SOURCE_CODE_PATH$OBJECTS_DIRECTORY/*.csproj.nuget.*
+          $NUGET_PACKAGES_DIRECTORY
+        key: "$CI_JOB_STAGE-${{ github.ref }}"
+    - run: dotnet restore --packages $NUGET_PACKAGES_DIRECTORY
+    - run: dotnet build --no-restore
+  tests:
+    needs: build
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/dotnet/sdk:7.0
+    timeout-minutes: 60
+    env:
+      OBJECTS_DIRECTORY: obj
+      NUGET_PACKAGES_DIRECTORY: ".nuget"
+      SOURCE_CODE_PATH: "*/*/"
+    steps:
+    - uses: actions/checkout@v4.1.0
+      with:
+        fetch-depth: 20
+        lfs: true
+    - uses: actions/cache@v3.3.2
+      with:
+        path: |-
+          $SOURCE_CODE_PATH$OBJECTS_DIRECTORY/project.assets.json
+          $SOURCE_CODE_PATH$OBJECTS_DIRECTORY/*.csproj.nuget.*
+          $NUGET_PACKAGES_DIRECTORY
+        key: "$CI_JOB_STAGE-${{ github.ref }}"
+    - run: dotnet restore --packages $NUGET_PACKAGES_DIRECTORY
+    - run: dotnet test --no-restore
+  deploy:
+    needs: tests
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/dotnet/sdk:7.0
+    environment: production
+    timeout-minutes: 60
+    env:
+      OBJECTS_DIRECTORY: obj
+      NUGET_PACKAGES_DIRECTORY: ".nuget"
+      SOURCE_CODE_PATH: "*/*/"
+    steps:
+    - uses: actions/checkout@v4.1.0
+      with:
+        fetch-depth: 20
+        lfs: true
+    - uses: actions/cache@v3.3.2
+      with:
+        path: |-
+          $SOURCE_CODE_PATH$OBJECTS_DIRECTORY/project.assets.json
+          $SOURCE_CODE_PATH$OBJECTS_DIRECTORY/*.csproj.nuget.*
+          $NUGET_PACKAGES_DIRECTORY
+        key: "$CI_JOB_STAGE-${{ github.ref }}"
+    - run: dotnet restore --packages $NUGET_PACKAGES_DIRECTORY
+    - run: echo "Define your deployment script!"
